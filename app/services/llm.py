@@ -3,6 +3,7 @@
 # Ollama(로컬) / Anthropic / OpenAI 전환 시 .env만 수정하면 됨
 
 from functools import lru_cache
+from typing import Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.embeddings import Embeddings
@@ -14,9 +15,9 @@ from app.core.config import settings
 
 def get_chat_model(
     *,
-    temperature: float | None = None,
-    max_tokens: int | None = None,
-    model_override: str | None = None,
+    temperature: Optional[float] = None,
+    max_tokens: Optional[int] = None,
+    model_override: Optional[str] = None,
 ) -> BaseChatModel:
     """
     LLM_PROVIDER 환경변수에 따라 Chat 모델을 반환한다.

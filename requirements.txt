@@ -1,41 +1,38 @@
 # Web Framework
-fastapi==0.115.5
-uvicorn[standard]==0.32.1
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
 
 # Pydantic & Settings
-pydantic==2.10.3
-pydantic-settings==2.6.1
-pydantic[email]==2.10.3
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+pydantic[email]>=2.10.0
 
-# Database — async PostgreSQL
-sqlalchemy==2.0.36
-asyncpg==0.30.0
-psycopg[binary]==3.2.3
+# Database
+sqlalchemy>=2.0.36
+asyncpg>=0.30.0
+psycopg[binary]>=3.2.4
 
-# pgvector (LangChain PGVector 백엔드)
-pgvector==0.3.6
-langchain-postgres==0.0.13
+# pgvector
+pgvector>=0.3.6
+langchain-postgres>=0.0.13
 
-# LangChain Core
-langchain==0.3.12
-langchain-core==0.3.25
-langchain-community==0.3.12
-
-# LLM Providers (필요한 것만 설치)
-langchain-ollama==0.2.2       # Ollama 로컬
-langchain-anthropic==0.3.3    # Anthropic Claude
-langchain-openai==0.2.12      # OpenAI / vLLM 호환
+# LangChain (버전을 pip에게 위임 — 패키지 간 의존성 자동 해결)
+langchain>=0.3.12
+langchain-community>=0.3.12
+langchain-ollama>=0.2.2
+langchain-anthropic>=0.3.3
+langchain-openai>=0.2.12
 
 # Document Parsing
-pypdf==5.1.0                  # PDF (Spring AI: PDFBox 대응)
-python-docx==1.1.2            # DOCX (Spring AI: Apache POI 대응)
+pypdf>=5.1.0
+python-docx>=1.1.2
 
 # Async HTTP
-httpx==0.28.1
-aiofiles==24.1.0
+httpx>=0.28.0
+aiofiles>=24.1.0
 
-# Multipart (파일 업로드)
-python-multipart==0.0.18
+# Multipart
+python-multipart>=0.0.18
 
 # Utilities
-python-dotenv==1.0.1
+python-dotenv>=1.0.1

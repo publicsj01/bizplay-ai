@@ -4,7 +4,7 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -13,9 +13,9 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 class ApiResponse(BaseModel):
     success: bool
-    data: Any | None = None
-    message: str | None = None
-    error: str | None = None
+    data: Optional[Any] = None
+    message: Optional[str] = None
+    error: Optional[str] = None
 
 
 # ── Bot ───────────────────────────────────────────────────────────────────────
@@ -25,44 +25,44 @@ class RecommendedQuestionDto(BaseModel):
 
 
 class BotCreateRequest(BaseModel):
-    corp_no: str | None = Field(default=None, max_length=50)
+    corp_no: Optional[str] = Field(default=None, max_length=50)
     name: str = Field(..., min_length=1)
-    description: str | None = None
-    contact_email: EmailStr | None = None
-    contact_phone: str | None = None
-    system_prompt: str | None = None
+    description: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    contact_phone: Optional[str] = None
+    system_prompt: Optional[str] = None
     source_expose: bool = True
     llm_model: str = Field(..., min_length=1)
     llm_temperature: Decimal = Field(default=Decimal("0.0"), ge=0, le=1)
     max_answer_length: int = Field(default=2048, ge=64, le=8192)
     history_turns: int = Field(default=5, ge=0, le=20)
     top_k: int = Field(default=5, ge=1, le=50)
-    recommended_questions: list[RecommendedQuestionDto] = Field(default_factory=list)
+    recommended_questions: List[RecommendedQuestionDto] = Field(default_factory=list)
 
 
 class BotUpdateRequest(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    contact_email: EmailStr | None = None
-    contact_phone: str | None = None
-    system_prompt: str | None = None
-    source_expose: bool | None = None
-    llm_model: str | None = None
-    llm_temperature: Decimal | None = Field(default=None, ge=0, le=1)
-    max_answer_length: int | None = Field(default=None, ge=64, le=8192)
-    history_turns: int | None = Field(default=None, ge=0, le=20)
-    top_k: int | None = Field(default=None, ge=1, le=50)
-    recommended_questions: list[RecommendedQuestionDto] | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    contact_phone: Optional[str] = None
+    system_prompt: Optional[str] = None
+    source_expose: Optional[bool] = None
+    llm_model: Optional[str] = None
+    llm_temperature: Optional[Decimal] = Field(default=None, ge=0, le=1)
+    max_answer_length: Optional[int] = Field(default=None, ge=64, le=8192)
+    history_turns: Optional[int] = Field(default=None, ge=0, le=20)
+    top_k: Optional[int] = Field(default=None, ge=1, le=50)
+    recommended_questions: Optional[List[RecommendedQuestionDto]] = None
 
 
 class BotResponse(BaseModel):
     id: uuid.UUID
     corp_no: str
     name: str
-    description: str | None
-    contact_email: str | None
-    contact_phone: str | None
-    system_prompt: str | None
+    description: Optional[str]
+    contact_email: Optional[str]
+    contact_phone: Optional[str]
+    system_prompt: Optional[str]
     source_expose: bool
     llm_model: str
     llm_temperature: Decimal
@@ -71,12 +71,12 @@ class BotResponse(BaseModel):
     top_k: int
     disabled: bool
     telegram_configured: bool
-    telegram_bot_username: str | None
-    telegram_configured_at: datetime | None
+    telegram_bot_username: Optional[str]
+    telegram_configured_at: Optional[datetime]
     kakao_configured: bool
-    kakao_bot_name: str | None
-    kakao_configured_at: datetime | None
-    recommended_questions: list[RecommendedQuestionDto]
+    kakao_bot_name: Optional[str]
+    kakao_configured_at: Optional[datetime]
+    recommended_questions: List[RecommendedQuestionDto]
     created_at: datetime
     updated_at: datetime
 
@@ -110,7 +110,7 @@ class DocumentResponse(BaseModel):
     bot_id: uuid.UUID
     title: str
     file_name: str
-    content_type: str | None
+    content_type: Optional[str]
     embedding_status: str
     created_at: datetime
     updated_at: datetime
@@ -123,8 +123,8 @@ class DocumentResponse(BaseModel):
 class ChatRequest(BaseModel):
     bot_id: uuid.UUID
     query: str = Field(..., min_length=1)
-    session_id: uuid.UUID | None = None
-    channel: str | None = Field(default="web", max_length=20)
+    session_id: Optional[uuid.UUID] = None
+    channel: Optional[str] = Field(default="web", max_length=20)
 
 
 class ChatSource(BaseModel):
@@ -140,14 +140,14 @@ class ChatSource(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     session_id: uuid.UUID
-    sources: list[ChatSource] = Field(default_factory=list)
+    sources: List[ChatSource] = Field(default_factory=list)
 
 
 class ChatHistoryMessage(BaseModel):
     id: uuid.UUID
     role: str
     content: str
-    lang: str | None
+    lang: Optional[str]
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -158,7 +158,7 @@ class ChatSessionResponse(BaseModel):
     bot_id: uuid.UUID
     channel: str
     created_at: datetime
-    messages: list[ChatHistoryMessage] = Field(default_factory=list)
+    messages: List[ChatHistoryMessage] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 
