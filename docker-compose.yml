@@ -17,5 +17,26 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build: .
+    container_name: bizplay_api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Docker 내부에서는 db 서비스명으로 접근
+      DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/bizplay_chatbot
+      # Ollama는 호스트에서 실행 중 → host.docker.internal로 접근
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      EMBED_BASE_URL: http://host.docker.internal:11434
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   postgres_data:
