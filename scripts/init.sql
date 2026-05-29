@@ -2,6 +2,29 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- ── 법인 그룹 / 법인 (Spring AI: V1__init.sql corp_group + corp) ────────────
+
+CREATE TABLE IF NOT EXISTS corp_group (
+    corp_group_id BIGSERIAL PRIMARY KEY,
+    corp_group_cd VARCHAR(20) UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS corp (
+    corp_id       BIGSERIAL PRIMARY KEY,
+    corp_no       VARCHAR(50) UNIQUE NOT NULL,
+    corp_group_id BIGINT NOT NULL REFERENCES corp_group(corp_group_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    corp_name     VARCHAR(255) NOT NULL,
+    created_date  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- DEFAULT 테넌트 시드 (Spring AI: V1 Flyway 시드와 동일)
+INSERT INTO corp_group (corp_group_cd) VALUES ('DEFAULT')
+    ON CONFLICT (corp_group_cd) DO NOTHING;
+
+INSERT INTO corp (corp_no, corp_group_id, corp_name)
+VALUES ('DEFAULT', 1, 'Default Corporation')
+    ON CONFLICT (corp_no) DO NOTHING;
+
 -- bots
 CREATE TABLE IF NOT EXISTS bots (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -169,3 +169,46 @@ class LlmModelInfo(BaseModel):
     name: str
     label: str
     model: str
+
+
+# ── CorpGroup ──────────────────────────────────────────────────────────────────
+# Spring AI: CorpGroupCreateRequest / CorpGroupResponse / CorpGroupUpdateRequest
+
+class CorpGroupCreateRequest(BaseModel):
+    corp_group_cd: str = Field(..., min_length=1, max_length=20)
+
+
+class CorpGroupUpdateRequest(BaseModel):
+    corp_group_cd: Optional[str] = Field(default=None, max_length=20)
+
+
+class CorpGroupResponse(BaseModel):
+    id: int
+    corp_group_cd: str
+
+    model_config = {"from_attributes": True}
+
+
+# ── Corporation ────────────────────────────────────────────────────────────────
+# Spring AI: CorpCreateRequest / CorpResponse / CorpUpdateRequest
+
+class CorpCreateRequest(BaseModel):
+    corp_no: str = Field(..., min_length=1, max_length=50)
+    corp_group_id: int
+    corp_name: str = Field(..., min_length=1, max_length=255)
+
+
+class CorpUpdateRequest(BaseModel):
+    # corp_no는 변경 불가 (경로 식별자) — Spring AI: CorpUpdateRequest.java 동일
+    corp_group_id: Optional[int] = None
+    corp_name: Optional[str] = Field(default=None, max_length=255)
+
+
+class CorpResponse(BaseModel):
+    id: int
+    corp_no: str
+    corp_group_id: int
+    corp_name: str
+    created_date: datetime
+
+    model_config = {"from_attributes": True}

@@ -6,6 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
+
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -17,10 +18,46 @@ from sqlalchemy import (
     Text,
     func,
 )
+
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+
+# ── Corp 테넌트 계층 ──────────────────────────────────────────────────────────
+# Spring AI: CorpGroup.java + Corporation.java 1:1 대응
+# 구조: CorpGroup (최상위) → Corporation (corp_no 소유) → Bot (soft ref)
+
+class CorpGroup(Base):
+    """
+    법인 그룹. 관련 Corporation 행들을 묶는 최상위 단위.
+    Spring AI: CorpGroup.java (corp_group 테이블)
+    """
+    __tablename__ = "corp_group"
+
+    id: Mapped[int] = mapped_column("corp_group_id", BigInteger, primary_key=True, autoincrement=True)
+    corp_group_cd: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+
+
+class Corporation(Base):
+    """
+    법인. corp_no가 자연 비즈니스 식별자(UNIQUE).
+    Bot.corp_no는 이 테이블을 soft ref(FK 없음)로 참조.
+    Spring AI: Corporation.java (corp 테이블)
+    """
+    __tablename__ = "corp"
+
+    id: Mapped[int] = mapped_column("corp_id", BigInteger, primary_key=True, autoincrement=True)
+    corp_no: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    corp_group_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("corp_group.corp_group_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
+    )
+    corp_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Spring AI: @CreatedDate → Spring Data Auditing. 여기서는 서버 기본값 사용
+    created_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Bot(Base):

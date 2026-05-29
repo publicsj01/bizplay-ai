@@ -243,6 +243,23 @@ async def get_daily_statistics(
     )
 
 
+@router.get("/by-corp/{corp_no}", response_model=ApiResponse)
+async def list_bots_by_corp(corp_no: str, db: AsyncSession = Depends(get_db)) -> ApiResponse:
+    """
+    corp_no 기준 봇 목록 필터링.
+    Spring AI: BotController.listByCorp() 대응
+    알 수 없는 corp_no → 빈 리스트 반환 (404 아님, soft ref 설계)
+    """
+    result = await db.execute(
+        select(Bot)
+        .options(selectinload(Bot.recommended_questions))
+        .where(Bot.corp_no == corp_no)
+        .order_by(Bot.name.asc())
+    )
+    bots = result.scalars().all()
+    return ApiResponse(success=True, data=[_to_response(b).model_dump() for b in bots])
+
+
 @router.get("/{bot_id}/sessions", response_model=ApiResponse)
 async def get_sessions(bot_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ApiResponse:
     result = await db.execute(

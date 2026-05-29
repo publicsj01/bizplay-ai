@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.routers import bots, chat, documents, recommend
+from app.routers import bots, chat, corp_groups, corps, documents, recommend
 
 
 @asynccontextmanager
@@ -48,6 +48,8 @@ app.include_router(chat.router)
 app.include_router(documents.router)
 app.include_router(bots.router)
 app.include_router(recommend.router)
+app.include_router(corp_groups.router)
+app.include_router(corps.router)
 
 
 @app.get("/health")
