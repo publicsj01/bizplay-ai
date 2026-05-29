@@ -78,7 +78,7 @@ async def handle_chat(db: AsyncSession, req: ChatRequest) -> ChatResponse:
         # 벡터 검색 (bot_id 필터)
         top_k = bot.top_k or settings.rag_top_k
         fetch_k = max(top_k, settings.reranker_candidates) if settings.reranker_enabled else top_k
-        context_docs = await similarity_search(search_query, str(bot.bot_id if hasattr(bot, "bot_id") else bot.id), fetch_k)
+        context_docs = await similarity_search(search_query, str(bot.id), fetch_k)
 
         # 리랭킹 (활성화된 경우)
         if settings.reranker_enabled and len(context_docs) > top_k:

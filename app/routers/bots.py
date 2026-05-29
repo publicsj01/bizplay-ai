@@ -1,5 +1,5 @@
 # 봇 관리 라우터 — Spring AI BotController.java 1:1 대응
-# CRUD + enable/disable + statistics + sessions
+# CRUD + enable/disable + statistics + sessions + by-corp 필터
 
 import uuid
 from datetime import datetime, timedelta
@@ -25,7 +25,6 @@ from app.models.schemas import (
     BotStatisticsResponse,
     BotUpdateRequest,
     DailyStatisticsItem,
-    KeywordItem,
     RecommendedQuestionDto,
 )
 
@@ -67,7 +66,11 @@ async def create_bot(
     req: BotCreateRequest,
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse:
-    """Spring AI: BotController.create() 대응. 새 봇은 disabled=True로 생성됨"""
+    """
+    새 봇 생성. disabled=True로 생성됨 (Spring AI 동일).
+    corp_no 미전달 시 settings.default_corp_no("DEFAULT")로 폴백.
+    Spring AI: BotService.create() + DefaultCorporationProvider.currentNo() 대응
+    """
     bot = Bot(
         corp_no=req.corp_no or settings.default_corp_no,
         name=req.name,
@@ -81,7 +84,7 @@ async def create_bot(
         max_answer_length=req.max_answer_length,
         history_turns=req.history_turns,
         top_k=req.top_k,
-        disabled=True,  # Spring AI: 신규 봇은 비활성 상태로 생성
+        disabled=True,
     )
     db.add(bot)
     await db.flush()
@@ -96,10 +99,38 @@ async def create_bot(
 
 @router.get("", response_model=ApiResponse)
 async def list_bots(db: AsyncSession = Depends(get_db)) -> ApiResponse:
+    """
+    전체 봇 목록 반환 (corp_no 필터 없음).
+    Spring AI: BotService.list() — 테넌트 경계는 상위 레이어에서 처리.
+    정렬: name ASC (Spring AI 동일)
+    """
     result = await db.execute(
         select(Bot)
         .options(selectinload(Bot.recommended_questions))
-        .order_by(Bot.created_at.desc())
+        .order_by(Bot.name.asc())
+    )
+    bots = result.scalars().all()
+    return ApiResponse(success=True, data=[_to_response(b).model_dump() for b in bots])
+
+
+# ⚠️ /by-corp/{corp_no} 는 반드시 /{bot_id} 보다 먼저 등록해야 함
+# FastAPI는 등록 순서대로 라우트를 매칭하므로,
+# "by-corp"가 UUID 검증 실패로 422를 반환하는 것을 방지.
+@router.get("/by-corp/{corp_no}", response_model=ApiResponse)
+async def list_bots_by_corp(corp_no: str, db: AsyncSession = Depends(get_db)) -> ApiResponse:
+    """
+    corp_no 기준 봇 목록 필터링.
+    Spring AI: BotController.listByCorp() + BotService.listByCorpNo() 대응
+    알 수 없는 corp_no → 빈 리스트 반환 (404 아님, soft ref 설계)
+    """
+    if not corp_no or not corp_no.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="corpNo is required")
+
+    result = await db.execute(
+        select(Bot)
+        .options(selectinload(Bot.recommended_questions))
+        .where(Bot.corp_no == corp_no)
+        .order_by(Bot.name.asc())
     )
     bots = result.scalars().all()
     return ApiResponse(success=True, data=[_to_response(b).model_dump() for b in bots])
@@ -124,7 +155,10 @@ async def update_bot(
     req: BotUpdateRequest,
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse:
-    """Spring AI: BotController.update() — PATCH 시맨틱"""
+    """
+    봇 설정 수정 (PATCH 시맨틱).
+    corp_no는 BotUpdateRequest에 없으므로 변경 불가 — Spring AI 동일.
+    """
     result = await db.execute(
         select(Bot)
         .options(selectinload(Bot.recommended_questions))
@@ -170,12 +204,11 @@ async def disable_bot(bot_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> 
 
 @router.delete("/{bot_id}", response_model=ApiResponse)
 async def delete_bot(bot_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ApiResponse:
-    """Spring AI: cascade 삭제 (documents, sessions, vector chunks)"""
+    """cascade 삭제: documents, sessions, vector chunks"""
     bot = await db.get(Bot, bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
-    # 벡터 청크 삭제 (bot_id 기준)
     from app.services.vector import get_vector_store
     import asyncio
     store = get_vector_store()
@@ -188,7 +221,10 @@ async def delete_bot(bot_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> A
 
 @router.get("/{bot_id}/statistics", response_model=ApiResponse)
 async def get_statistics(bot_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ApiResponse:
-    """Spring AI: BotController.getStatistics() 대응"""
+    """
+    봇 통계. corp_no 필터 없음 — bot_id만으로 조회.
+    Spring AI: BotController.getStatistics() 대응
+    """
     doc_count = await db.scalar(select(func.count()).where(Document.bot_id == bot_id))
     session_count = await db.scalar(select(func.count()).where(ChatSession.bot_id == bot_id))
     msg_count = await db.scalar(
@@ -241,23 +277,6 @@ async def get_daily_statistics(
         success=True,
         data=[DailyStatisticsItem(date=str(r.date), session_count=r.session_count, message_count=0).model_dump() for r in rows],
     )
-
-
-@router.get("/by-corp/{corp_no}", response_model=ApiResponse)
-async def list_bots_by_corp(corp_no: str, db: AsyncSession = Depends(get_db)) -> ApiResponse:
-    """
-    corp_no 기준 봇 목록 필터링.
-    Spring AI: BotController.listByCorp() 대응
-    알 수 없는 corp_no → 빈 리스트 반환 (404 아님, soft ref 설계)
-    """
-    result = await db.execute(
-        select(Bot)
-        .options(selectinload(Bot.recommended_questions))
-        .where(Bot.corp_no == corp_no)
-        .order_by(Bot.name.asc())
-    )
-    bots = result.scalars().all()
-    return ApiResponse(success=True, data=[_to_response(b).model_dump() for b in bots])
 
 
 @router.get("/{bot_id}/sessions", response_model=ApiResponse)
