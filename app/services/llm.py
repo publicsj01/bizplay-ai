@@ -1,6 +1,6 @@
 # LLM Provider 추상화 — .env의 LLM_PROVIDER 값으로 분기
 # Spring AI: SpringAiConfig.java chatClientRegistry 대응
-# Ollama(로컬) / Anthropic / OpenAI 전환 시 .env만 수정하면 됨
+# Ollama(로컬) / Anthropic / OpenAI / Google Gemini 전환 시 .env만 수정하면 됨
 
 from functools import lru_cache
 from typing import Optional
@@ -56,6 +56,15 @@ def get_chat_model(
             max_tokens=tokens,
         )
 
+    if settings.llm_provider == "gemini":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        return ChatGoogleGenerativeAI(
+            google_api_key=settings.gemini_api_key,
+            model=model_name,
+            temperature=temp,
+            max_output_tokens=tokens,
+        )
+
     raise ValueError(f"지원하지 않는 LLM_PROVIDER: {settings.llm_provider}")
 
 
@@ -89,6 +98,14 @@ def get_embedding_model() -> Embeddings:
         return OpenAIEmbeddings(
             base_url=settings.embed_base_url,
             api_key=settings.embed_api_key,
+            model=settings.embed_model,
+        )
+
+    if settings.llm_provider == "gemini":
+        # Gemini는 자체 임베딩 없이 Ollama nomic-embed-text 재사용
+        from langchain_ollama import OllamaEmbeddings
+        return OllamaEmbeddings(
+            base_url=settings.embed_base_url,
             model=settings.embed_model,
         )
 

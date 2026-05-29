@@ -24,9 +24,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # LLM Provider 선택: ollama | openai | anthropic
+    # LLM Provider 선택: ollama | openai | anthropic | gemini
     # .env 수정만으로 전환 가능 (Spring AI: app.llm 프로퍼티 대응)
-    llm_provider: Literal["ollama", "openai", "anthropic"] = "ollama"
+    llm_provider: Literal["ollama", "openai", "anthropic", "gemini"] = "ollama"
     llm_model: str = "llama3.2"
 
     # Ollama (로컬)
@@ -38,6 +38,9 @@ class Settings(BaseSettings):
 
     # Anthropic
     anthropic_api_key: str = ""
+
+    # Google Gemini
+    gemini_api_key: str = ""
 
     # Embedding 서버 (Spring AI: app.embed)
     embed_base_url: str = "http://localhost:8001"

@@ -22,6 +22,7 @@ langchain-community>=0.3.12
 langchain-ollama>=0.2.2
 langchain-anthropic>=0.3.3
 langchain-openai>=0.2.12
+langchain-google-genai>=2.0.0
 
 # Document Parsing
 pypdf>=5.1.0
